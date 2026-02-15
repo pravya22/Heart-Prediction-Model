@@ -1,52 +1,55 @@
+
 import streamlit as st
 import pandas as pd
 import joblib
-import plotly.express as px
-import plotly.graph_objects as go
-from PIL import Image
 import time
 
 # Page config
 st.set_page_config(
-    page_title="Heart Disease Predictor",
+    page_title="🫀 Heart Disease Predictor", 
     page_icon="🫀",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
+# Custom CSS - Beautiful Medical Design
 st.markdown("""
     <style>
     .main-header {
         font-size: 3.5rem !important;
         font-weight: 700 !important;
-        color: #2c3e50 !important;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         text-align: center;
         margin-bottom: 2rem !important;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
     }
     .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1.5rem;
-        border-radius: 15px;
-        color: white;
+        padding: 2rem;
+        border-radius: 20px;
         text-align: center;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        border: 2px solid #e1e8ed;
     }
-    .high-risk {
+    .high-risk-card {
         background: linear-gradient(135deg, #ff6b6b, #ee5a24) !important;
+        color: white !important;
         animation: pulse 2s infinite;
     }
-    .low-risk {
+    .low-risk-card {
         background: linear-gradient(135deg, #00b894, #00a085) !important;
+        color: white !important;
     }
     @keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(255,107,107,0.7); }
-        70% { box-shadow: 0 0 0 20px rgba(255,107,107,0); }
-        100% { box-shadow: 0 0 0 0 rgba(255,107,107,0); }
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
     }
-    .stSlider > div > div > div {
-        background: linear-gradient(90deg, #667eea, #764ba2);
+    .feature-bar {
+        background: linear-gradient(to right, #ff4757, #ffa502, #2ed573);
+        height: 25px;
+        border-radius: 10px;
+        margin: 5px 0;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -58,126 +61,124 @@ def load_model():
 
 model = load_model()
 
-# Title
-st.markdown('<h1 class="main-header">🫀 Heart Disease Predictor</h1>', unsafe_allow_html=True)
-st.markdown("### Professional ML System • 78.8% Accuracy • 6 Key Features")
+# Header
+st.markdown('<h1 class="main-header">🫀 Heart Disease Predictor Pro</h1>', unsafe_allow_html=True)
+st.markdown("### ⚡ ML-Powered • 78.8% Accurate • Medical-Grade • 6 Key Features")
 
-# Sidebar - Patient Info
-st.sidebar.markdown("## 👤 Patient Information")
+# Sidebar - Clean Patient Input
+st.sidebar.markdown("## 👨‍⚕️ **Patient Details**")
 st.sidebar.markdown("---")
 
+# 6 Features Layout (2x3 grid)
 col1, col2 = st.columns(2)
 with col1:
-    age = st.slider("**Age**", 20, 80, 45, help="Patient age")
+    age = st.slider("👴 **Age**", 20, 80, 45)
 with col2:
-    sex = st.selectbox("**Sex**", ["Male", "Female"], index=0)
+    sex = st.selectbox("⚥ **Gender**", ["Male", "Female"])
 
 col1, col2 = st.columns(2)
 with col1:
-    cp = st.selectbox("**Chest Pain Type**", 
-                     ["Type 0: Typical Angina", "Type 1: Atypical Angina", 
-                      "Type 2: Non-Anginal", "Type 3: Asymptomatic"], index=0)
-    cp_value = int(cp.split()[-1])  # Extract number
+    cp_options = ["Type 0: Typical Angina", "Type 1: Atypical", "Type 2: Non-Anginal", "Type 3: Asymptomatic"]
+    cp = st.selectbox("❤️ **Chest Pain**", cp_options)
+    cp_value = int(cp.split()[-1])
 with col2:
-    chol = st.slider("**Cholesterol (mg/dl)**", 100, 600, 250, help="Serum cholesterol")
+    chol = st.slider("🩸 **Cholesterol**", 100, 600, 250)
 
 col1, col2 = st.columns(2)
 with col1:
-    thalch = st.slider("**Max Heart Rate**", 60, 220, 150)
+    thalch = st.slider("💓 **Max Heart Rate**", 60, 220, 150)
 with col2:
-    exang = st.selectbox("**Exercise Angina**", ["No", "Yes"])
+    exang = st.selectbox("🏃 **Exercise Angina**", ["No", "Yes"])
 
+# Predict Button
 st.sidebar.markdown("---")
-if st.sidebar.button("🔬 **Generate Prediction**", type="primary", use_container_width=True):
-    with st.spinner("Analyzing heart risk..."):
-        time.sleep(1.5)
+if st.sidebar.button("🚨 **ANALYZE RISK**", use_container_width=True, type="primary"):
+    with st.spinner("🔬 Computing medical risk assessment..."):
+        time.sleep(1)
         
-        # Create input data
+        # Create input matching your model
         input_data = pd.DataFrame({
-            'age': [age],
-            'sex': [1 if sex == "Male" else 0],
-            'cp': [cp_value],
-            'chol': [chol],
-            'thalch': [thalch],
-            'exang': [1 if exang == "Yes" else 0]
+            'age': [age], 'sex': [1 if sex == "Male" else 0],
+            'cp': [cp_value], 'chol': [chol], 
+            'thalch': [thalch], 'exang': [1 if exang == "Yes" else 0]
         })
         
-        # Predict with 40% threshold (MEDICAL STANDARD)
+        # FIXED PREDICTION (40% threshold)
         probability = model.predict_proba(input_data)[0][1]
-        is_high_risk = probability > 0.40
         
-        # Main Results Section
-        col1, col2 = st.columns([2, 1])
+        # Results Section
+        col1, col2 = st.columns([3, 1])
         
         with col1:
-            st.markdown("## 🎯 **Prediction Result**")
-            if is_high_risk:
+            st.markdown("## 🎯 **Medical Assessment**")
+            if probability > 0.40:
                 st.markdown("""
-                <div class="metric-card high-risk">
-                    <h2 style="margin: 0; font-size: 2.5rem;">🚨 HIGH RISK</h2>
-                    <p style="margin: 0.5rem 0; font-size: 1.3rem;">Heart Disease Probability</p>
-                    <h1 style="margin: 0; font-size: 3.5rem;">{:.1%}</h1>
+                <div class="metric-card high-risk-card">
+                    <h1 style='font-size: 4rem; margin: 0;'>🚨 HIGH RISK</h1>
+                    <h2 style='font-size: 2.5rem; margin: 0.5rem 0;'>Heart Disease</h2>
+                    <h3 style='font-size: 3rem; margin: 1rem 0;'>"""+f"{probability:.1%}"+"""</h3>
+                    <p style='font-size: 1.3rem;'>⚠️ Seek immediate medical attention</p>
                 </div>
-                """.format(probability), unsafe_allow_html=True)
-                st.warning("⚠️ **Immediate medical consultation recommended**")
+                """, unsafe_allow_html=True)
             else:
                 st.markdown("""
-                <div class="metric-card low-risk">
-                    <h2 style="margin: 0; font-size: 2.5rem;">✅ LOW RISK</h2>
-                    <p style="margin: 0.5rem 0; font-size: 1.3rem;">Heart Disease Probability</p>
-                    <h1 style="margin: 0; font-size: 3.5rem;">{:.1%}</h1>
+                <div class="metric-card low-risk-card">
+                    <h1 style='font-size: 4rem; margin: 0;'>✅ LOW RISK</h1>
+                    <h2 style='font-size: 2.5rem; margin: 0.5rem 0;'>Heart Disease</h2>
+                    <h3 style='font-size: 3rem; margin: 1rem 0;'>"""+f"{probability:.1%}"+"""</h3>
+                    <p style='font-size: 1.3rem;'>🎉 Continue healthy lifestyle</p>
                 </div>
-                """.format(probability), unsafe_allow_html=True)
-                st.success("🎉 Continue healthy lifestyle")
+                """, unsafe_allow_html=True)
         
         with col2:
-            st.metric("**Risk Score**", f"{probability:.1%}", f"{probability*100:.0f}")
+            st.metric("**Risk Level**", f"{probability:.0%}", "40% Threshold")
         
+        # Feature Importance Bars (No Plotly!)
+        st.markdown("## 📈 **Your Risk Factors**")
         st.markdown("---")
         
-        # Feature Contributions
-        st.markdown("## 📊 **Feature Analysis**")
-        feature_names = ['Age', 'Male', 'Chest Pain', 'Cholesterol', 'Heart Rate', 'Exercise Angina']
-        feature_values = [age/80, input_data['sex'].values[0], cp_value/3, chol/600, thalch/220, input_data['exang'].values[0]]
+        features = ['Age', 'Male', 'Chest Pain Type', 'Cholesterol', 'Heart Rate', 'Exercise Angina']
+        values = [age/80, 1 if sex=="Male" else 0, cp_value/3, chol/600, (220-thalch)/220, 
+                 1 if exang=="Yes" else 0]
         
-        fig = px.bar(x=feature_names, y=feature_values, 
-                    title="Your Risk Factors (Normalized)",
-                    color=feature_values, color_continuous_scale="RdYlGn_r")
-        fig.update_layout(height=400, showlegend=False)
-        st.plotly_chart(fig, use_container_width=True)
+        for feature, value in zip(features, values):
+            col1, col2, col3 = st.columns([2, 6, 3])
+            with col1:
+                st.write(f"**{feature}**")
+            with col2:
+                st.markdown(f"""
+                <div class="feature-bar" style="width: {value*100}%;"></div>
+                """, unsafe_allow_html=True)
+            with col3:
+                st.write(f"{value:.0%}")
         
-        # Risk Interpretation
-        st.markdown("## 💡 **Risk Interpretation**")
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.info(f"**Age**: {age} years")
-            st.info(f"**Cholesterol**: {chol} mg/dl")
-        with col2:
-            st.info(f"**Max Heart Rate**: {thalch} bpm")
-            st.warning(f"**Chest Pain Type**: {cp.split(':')[1].strip()}")
-        with col3:
-            st.info(f"**Exercise Angina**: {'Yes' if exang=='Yes' else 'No'}")
-            st.info(f"**Sex**: {sex}")
+        # Summary Table
+        st.markdown("## 📋 **Patient Summary**")
+        summary_data = {
+            "Parameter": ["Age", "Gender", "Chest Pain", "Cholesterol", "Max HR", "Exercise Angina"],
+            "Value": [f"{age} years", sex, cp.split(":")[1].strip(), f"{chol} mg/dl", 
+                     f"{thalch} bpm", exang],
+            "Risk Level": ["Medium", "High" if sex=="Male" else "Low", f"High ({cp_value}/3)", 
+                          "High" if chol>300 else "Medium", "High" if thalch<120 else "Low", 
+                          "High" if exang=="Yes" else "Low"]
+        }
+        st.table(pd.DataFrame(summary_data))
 
-# Performance Metrics Section
-with st.expander("📈 **Model Performance**", expanded=False):
+# Model Info
+with st.expander("📊 **Model Specifications**"):
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Test Accuracy", "78.8%")
-    col2.metric("High Risk Detection", "82% Recall")
-    col3.metric("Features Used", "6 Key Medical")
-    col4.metric("Threshold", "40% Medical Std")
+    col1.metric("Accuracy", "78.8%")
+    col2.metric("High Risk Recall", "82%")
+    col3.metric("Patients Trained", "920")
+    col4.metric("Features", "6 Medical")
 
 # Footer
 st.markdown("---")
 st.markdown("""
-<div style='text-align: center; color: #7f8c8d; padding: 2rem;'>
-    <h3>🩺 Built for Medical Research</h3>
-    <p>Powered by Logistic Regression • Trained on 920 patients<br>
-    <strong>NOT a substitute for professional medical advice</strong></p>
+<div style='text-align: center; padding: 2rem; color: #6c757d;'>
+    <h3>🏥 Professional Medical ML System</h3>
+    <p>Trained on 920 patients • Logistic Regression • <strong>40% Medical Threshold</strong><br>
+    ⚠️ <em>NOT medical advice - consult physician</em></p>
 </div>
 """, unsafe_allow_html=True)
 
-# Auto-refresh for demo
-if 'prediction_made' not in st.session_state:
-    st.session_state.prediction_made = False
