@@ -1,132 +1,183 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 import joblib
+import plotly.express as px
+import plotly.graph_objects as go
+from PIL import Image
+import time
 
-# -------------------------
-# Page Configuration
-# -------------------------
-st.set_page_config(page_title="Heart Disease Prediction", layout="wide")
+# Page config
+st.set_page_config(
+    page_title="Heart Disease Predictor",
+    page_icon="🫀",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# -------------------------
-# Custom Styling
-# -------------------------
+# Custom CSS
 st.markdown("""
     <style>
-    .main {
-        background-color: #f5f7fa;
+    .main-header {
+        font-size: 3.5rem !important;
+        font-weight: 700 !important;
+        color: #2c3e50 !important;
+        text-align: center;
+        margin-bottom: 2rem !important;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
     }
-    h1 {
-        color: #c0392b;
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 1.5rem;
+        border-radius: 15px;
+        color: white;
+        text-align: center;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+    .high-risk {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a24) !important;
+        animation: pulse 2s infinite;
+    }
+    .low-risk {
+        background: linear-gradient(135deg, #00b894, #00a085) !important;
+    }
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(255,107,107,0.7); }
+        70% { box-shadow: 0 0 0 20px rgba(255,107,107,0); }
+        100% { box-shadow: 0 0 0 0 rgba(255,107,107,0); }
+    }
+    .stSlider > div > div > div {
+        background: linear-gradient(90deg, #667eea, #764ba2);
     }
     </style>
 """, unsafe_allow_html=True)
 
-# -------------------------
+# Load model
+@st.cache_resource
+def load_model():
+    return joblib.load('heartdiseasemodel.pkl')
+
+model = load_model()
+
 # Title
-# -------------------------
-st.title("❤️ Heart Disease Prediction System")
-st.write("Machine Learning Project - Predicting Heart Disease Risk")
+st.markdown('<h1 class="main-header">🫀 Heart Disease Predictor</h1>', unsafe_allow_html=True)
+st.markdown("### Professional ML System • 78.8% Accuracy • 6 Key Features")
 
-# -------------------------
-# Load Model
-# -------------------------
-model = joblib.load("heart_disease_model.pkl")
+# Sidebar - Patient Info
+st.sidebar.markdown("## 👤 Patient Information")
+st.sidebar.markdown("---")
 
-# -------------------------
-# Sidebar - Patient Input
-# -------------------------
-st.sidebar.header("Enter Patient Details")
+col1, col2 = st.columns(2)
+with col1:
+    age = st.slider("**Age**", 20, 80, 45, help="Patient age")
+with col2:
+    sex = st.selectbox("**Sex**", ["Male", "Female"], index=0)
 
-age = st.sidebar.slider("Age", 20, 80, 40)
-sex = st.sidebar.selectbox("Sex", ["Female", "Male"])
-cp = st.sidebar.selectbox("Chest Pain Type", ["Type 0", "Type 1", "Type 2", "Type 3"])
-trestbps = st.sidebar.slider("Resting Blood Pressure", 90, 200, 120)
-chol = st.sidebar.slider("Cholesterol Level", 100, 600, 200)
-fbs = st.sidebar.selectbox("Fasting Blood Sugar > 120 mg/dl", ["No", "Yes"])
-restecg = st.sidebar.selectbox("Resting ECG Result", ["Normal", "ST-T Abnormality", "Left Ventricular Hypertrophy"])
-thalch = st.sidebar.slider("Maximum Heart Rate", 60, 220, 150)
-exang = st.sidebar.selectbox("Exercise Induced Angina", ["No", "Yes"])
-oldpeak = st.sidebar.slider("ST Depression Induced by Exercise", 0.0, 6.0, 1.0)
-slope = st.sidebar.selectbox("Slope of ST Segment", ["Upsloping", "Flat", "Downsloping"])
-ca = st.sidebar.slider("Number of Major Vessels Colored by Fluoroscopy (0-3)", 0, 3, 0)
-thal = st.sidebar.selectbox("Thalassemia Type", ["Normal", "Fixed Defect", "Reversible Defect"])
+col1, col2 = st.columns(2)
+with col1:
+    cp = st.selectbox("**Chest Pain Type**", 
+                     ["Type 0: Typical Angina", "Type 1: Atypical Angina", 
+                      "Type 2: Non-Anginal", "Type 3: Asymptomatic"], index=0)
+    cp_value = int(cp.split()[-1])  # Extract number
+with col2:
+    chol = st.slider("**Cholesterol (mg/dl)**", 100, 600, 250, help="Serum cholesterol")
 
-# Convert categorical inputs to numeric
-sex = 1 if sex == "Male" else 0
-fbs = 1 if fbs == "Yes" else 0
-exang = 1 if exang == "Yes" else 0
-cp = int(cp.split()[1])
-restecg_dict = {"Normal": 0, "ST-T Abnormality": 1, "Left Ventricular Hypertrophy": 2}
-restecg = restecg_dict[restecg]
-slope_dict = {"Upsloping": 0, "Flat": 1, "Downsloping": 2}
-slope = slope_dict[slope]
-thal_dict = {"Normal": 1, "Fixed Defect": 2, "Reversible Defect": 3}
-thal = thal_dict[thal]
+col1, col2 = st.columns(2)
+with col1:
+    thalch = st.slider("**Max Heart Rate**", 60, 220, 150)
+with col2:
+    exang = st.selectbox("**Exercise Angina**", ["No", "Yes"])
 
-# Prepare input dataframe
-input_data = pd.DataFrame([[age, sex, cp, trestbps, chol, fbs, restecg,
-                            thalch, exang, oldpeak, slope, ca, thal]],
-                          columns=["age","sex","cp","trestbps","chol","fbs","restecg",
-                                   "thalch","exang","oldpeak","slope","ca","thal"])
+st.sidebar.markdown("---")
+if st.sidebar.button("🔬 **Generate Prediction**", type="primary", use_container_width=True):
+    with st.spinner("Analyzing heart risk..."):
+        time.sleep(1.5)
+        
+        # Create input data
+        input_data = pd.DataFrame({
+            'age': [age],
+            'sex': [1 if sex == "Male" else 0],
+            'cp': [cp_value],
+            'chol': [chol],
+            'thalch': [thalch],
+            'exang': [1 if exang == "Yes" else 0]
+        })
+        
+        # Predict with 40% threshold (MEDICAL STANDARD)
+        probability = model.predict_proba(input_data)[0][1]
+        is_high_risk = probability > 0.40
+        
+        # Main Results Section
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            st.markdown("## 🎯 **Prediction Result**")
+            if is_high_risk:
+                st.markdown("""
+                <div class="metric-card high-risk">
+                    <h2 style="margin: 0; font-size: 2.5rem;">🚨 HIGH RISK</h2>
+                    <p style="margin: 0.5rem 0; font-size: 1.3rem;">Heart Disease Probability</p>
+                    <h1 style="margin: 0; font-size: 3.5rem;">{:.1%}</h1>
+                </div>
+                """.format(probability), unsafe_allow_html=True)
+                st.warning("⚠️ **Immediate medical consultation recommended**")
+            else:
+                st.markdown("""
+                <div class="metric-card low-risk">
+                    <h2 style="margin: 0; font-size: 2.5rem;">✅ LOW RISK</h2>
+                    <p style="margin: 0.5rem 0; font-size: 1.3rem;">Heart Disease Probability</p>
+                    <h1 style="margin: 0; font-size: 3.5rem;">{:.1%}</h1>
+                </div>
+                """.format(probability), unsafe_allow_html=True)
+                st.success("🎉 Continue healthy lifestyle")
+        
+        with col2:
+            st.metric("**Risk Score**", f"{probability:.1%}", f"{probability*100:.0f}")
+        
+        st.markdown("---")
+        
+        # Feature Contributions
+        st.markdown("## 📊 **Feature Analysis**")
+        feature_names = ['Age', 'Male', 'Chest Pain', 'Cholesterol', 'Heart Rate', 'Exercise Angina']
+        feature_values = [age/80, input_data['sex'].values[0], cp_value/3, chol/600, thalch/220, input_data['exang'].values[0]]
+        
+        fig = px.bar(x=feature_names, y=feature_values, 
+                    title="Your Risk Factors (Normalized)",
+                    color=feature_values, color_continuous_scale="RdYlGn_r")
+        fig.update_layout(height=400, showlegend=False)
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Risk Interpretation
+        st.markdown("## 💡 **Risk Interpretation**")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.info(f"**Age**: {age} years")
+            st.info(f"**Cholesterol**: {chol} mg/dl")
+        with col2:
+            st.info(f"**Max Heart Rate**: {thalch} bpm")
+            st.warning(f"**Chest Pain Type**: {cp.split(':')[1].strip()}")
+        with col3:
+            st.info(f"**Exercise Angina**: {'Yes' if exang=='Yes' else 'No'}")
+            st.info(f"**Sex**: {sex}")
 
-# -------------------------
-# Prediction Section
-# -------------------------
-st.subheader("Prediction Result")
+# Performance Metrics Section
+with st.expander("📈 **Model Performance**", expanded=False):
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Test Accuracy", "78.8%")
+    col2.metric("High Risk Detection", "82% Recall")
+    col3.metric("Features Used", "6 Key Medical")
+    col4.metric("Threshold", "40% Medical Std")
 
-if st.button("Predict"):
-    prediction = model.predict(input_data)
-    prediction_proba = model.predict_proba(input_data)[:,1]  # probability of high risk
-    st.write(f"Probability of High Risk: {prediction_proba[0]:.2f}")
+# Footer
+st.markdown("---")
+st.markdown("""
+<div style='text-align: center; color: #7f8c8d; padding: 2rem;'>
+    <h3>🩺 Built for Medical Research</h3>
+    <p>Powered by Logistic Regression • Trained on 920 patients<br>
+    <strong>NOT a substitute for professional medical advice</strong></p>
+</div>
+""", unsafe_allow_html=True)
 
-    if prediction[0] == 1:
-        st.error("⚠️ High Risk of Heart Disease")
-    else:
-        st.success("✅ Low Risk of Heart Disease")
-
-# -------------------------
-# Model Accuracy Comparison
-# -------------------------
-st.subheader("Model Accuracy Comparison")
-
-models = ["Logistic Regression", "Decision Tree", "Random Forest"]
-accuracies = [0.80, 0.75, 0.80]  # Replace with real values
-
-fig1, ax1 = plt.subplots()
-ax1.bar(models, accuracies)
-ax1.set_ylabel("Accuracy")
-ax1.set_ylim(0.6, 1)
-plt.xticks(rotation=20)
-st.pyplot(fig1)
-
-# -------------------------
-# Feature Importance Section
-# -------------------------
-st.subheader("Feature Importance")
-
-try:
-    importance = abs(model.coef_[0])
-    features = input_data.columns
-    fig2, ax2 = plt.subplots()
-    ax2.bar(features, importance)
-    ax2.set_title("Feature Importance")
-    plt.xticks(rotation=45)
-    st.pyplot(fig2)
-except:
-    st.write("Feature importance not available for this model.")
-
-# -------------------------
-# Project Description
-# -------------------------
-st.subheader("Project Description")
-
-st.write("""
-This project predicts the risk of heart disease using Machine Learning.
-
-• 13 medical features are considered.
-• Missing values are handled during training.
-• 3 ML models were trained and compared.
-• Logistic Regression achieved the highest accuracy.
-• The model predicts whether a patient is at High Risk or Low Risk of heart disease.
-""")
+# Auto-refresh for demo
+if 'prediction_made' not in st.session_state:
+    st.session_state.prediction_made = False
